@@ -189,17 +189,6 @@ async def ask(interaction: discord.Interaction, question: str):
     try:
         await interaction.response.defer()
         
-        # Check permissions before proceeding
-        permissions = check_required_permissions(interaction.channel)
-        missing_permissions = [perm for perm, has_perm in permissions.items() if not has_perm]
-        
-        if missing_permissions:
-            await interaction.followup.send(
-                f"⚠️ Bot is missing required permissions: {', '.join(missing_permissions)}\n"
-                "Please ask a server admin to grant these permissions in the server settings."
-            )
-            return
-        
         history = await format_message_history(interaction.channel)
         
         prompt = f"""Recent conversation history:
@@ -218,8 +207,15 @@ Please consider the conversation history above when answering. If there are any 
             }]
         )
         
-        response = message.content
-        
+        # Extract text from the response
+        if hasattr(message.content, '__iter__') and not isinstance(message.content, str):
+            # If content is a list of blocks, get the text from each block
+            response = "\n".join(block.text for block in message.content if hasattr(block, 'text'))
+        else:
+            # If content is already a string
+            response = str(message.content)
+
+        # Split and send long messages
         if len(response) > 2000:
             chunks = [response[i:i+2000] for i in range(0, len(response), 2000)]
             await interaction.followup.send(chunks[0])
