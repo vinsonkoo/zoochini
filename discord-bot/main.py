@@ -9,6 +9,7 @@ import asyncio
 from PIL import Image
 from PyPDF2 import PdfReader
 import tempfile
+import pytesseract
 
 
 class ZoochiniBot(discord.Client):
