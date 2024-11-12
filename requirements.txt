@@ -1,7 +1,11 @@
 aiohttp==3.10.10
 anthropic==0.39.0
+async-timeout==5.0.1
 audioop-lts==0.2.1
 discord.py==2.4.0
+google-api-python-client==2.151.0
+google-auth-httplib2==0.2.0
+google-auth-oauthlib==1.2.1
 pillow==11.0.0
 PyPDF2==3.0.1
 pytesseract==0.3.13
