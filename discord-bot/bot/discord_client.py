@@ -27,3 +27,23 @@ class ZoochiniBot(discord.Client):
         @self.tree.command(name="ask", description="Ask Claude a question with context")
         async def ask(interaction: discord.Interaction, question: str):
             await self.message_handler.handle_ask_command(interaction, question)
+
+        @self.tree.command(name="ask_drive", description="Ask Claude about a Google Drive document")
+        async def ask_drive(interaction: discord.Interaction, doc_id: str, question: str):
+            await self.message_handler.handle_ask_drive_command(interaction, doc_id, question)
+
+        @self.tree.command(name="list_folder", description="List contents of a Google Drive folder")
+        async def list_folder(interaction: discord.Interaction, folder_id: str):
+            await self.message_handler.handle_list_folder_command(interaction, folder_id)
+
+        @self.tree.command(name="ask_folder", description="Ask Claude about all documents in a folder")
+        async def ask_folder(interaction: discord.Interaction, folder_id: str, question: str):
+            await self.message_handler.handle_ask_folder_command(interaction, folder_id, question)
+
+        @self.tree.command(name="search_drive", description="Search for files or folders by name")
+        async def search_drive(interaction: discord.Interaction, name: str, type: str = None):
+            await self.message_handler.handle_search_drive_command(interaction, name, type)
+
+        @self.tree.command(name="ask_about", description="Ask Claude about files matching a name")
+        async def ask_about(interaction: discord.Interaction, name: str, question: str):
+            await self.message_handler.handle_ask_about_command(interaction, name, question)
