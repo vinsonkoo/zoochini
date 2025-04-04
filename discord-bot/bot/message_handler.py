@@ -1,3 +1,4 @@
+import aiohttp
 import asyncio
 import discord
 from async_timeout import timeout
@@ -11,6 +12,7 @@ class MessageHandler:
         self.claude_client = claude_client
         self.file_processor = file_processor
         self.drive_processor = drive_processor
+        self.aiohttp_session = None
 
     def _check_required_permissions(self, channel):
         """Check if bot has required permissions in the channel"""
@@ -97,14 +99,46 @@ Attachments are clearly marked between === Begin Attachment Content === and === 
 
 {formatted_history}"""
 
-    async def handle_ask_command(self, interaction: discord.Interaction, question: str):
+    async def handle_ask_command(self, interaction: discord.Interaction, question: str, file: discord.Attachment = None):
         try:
             await interaction.response.defer()
+
+            # Get message history
             history = await self.format_message_history(interaction.channel)
-            response = await self.claude_client.get_response(interaction.user.name, question, history)
+
+            # Process file if provided
+            file_content = ""
+
+            # Handle both pasted images (which become embedded URLs) and file attachments
+            if file:
+                if file.content_type and file.content_type.startswith('image/'):
+                    # Create session if needed
+                    if not self.aiohttp_session:
+                        self.aiohttp_session = aiohttp.ClientSession()
+
+                    async with self.aiohttp_session.get(file.url) as response:
+                        if response.status == 200:
+                            image_bytes = await response.read()
+                            file_content = await self.file_processor.analyze_image(image_bytes)
+                else:
+                    # Handle as normal file attachment
+                    file_content = await self.file_processor.get_file_content(file)
+
+                if file_content:
+                    file_content = f"\nFile attachment ({file.filename}) content:\n{file_content}"
+
+            # Combine question with file content if present
+            full_question = question
+            if file_content:
+                full_question = f"{question}\n\nAnalyze this attached file: {file_content}"
+
+            # Get Claude's response
+            response = await self.claude_client.get_response(interaction.user.name, full_question, history)
             await self._send_chunked_response(interaction, response)
+
         except Exception as e:
             await interaction.followup.send(f"Error: {str(e)}")
+            raise  # Re-raise to see full traceback in logs
 
     async def _send_chunked_response(self, interaction, response: str):
         # Handle Discord's 2000 character limit
@@ -293,3 +327,9 @@ Attachments are clearly marked between === Begin Attachment Content === and === 
             await self._send_chunked_response(interaction, response)
         except Exception as e:
             await interaction.followup.send(f"Error: {str(e)}")
+
+    async def cleanup(self):
+        """Cleanup method to close the aiohttp session"""
+        if self.aiohttp_session:
+            await self.aiohttp_session.close()
+            self.aiohttp_session = None

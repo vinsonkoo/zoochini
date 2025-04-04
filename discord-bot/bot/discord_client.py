@@ -1,3 +1,4 @@
+import aiohttp
 import discord
 from discord import app_commands
 from .message_handler import MessageHandler
@@ -24,9 +25,13 @@ class ZoochiniBot(discord.Client):
             latency = round(self.latency * 1000)
             await interaction.response.send_message(f'Pong! Latency: {latency}ms')
 
-        @self.tree.command(name="ask", description="Ask Claude a question with context")
-        async def ask(interaction: discord.Interaction, question: str):
-            await self.message_handler.handle_ask_command(interaction, question)
+        @self.tree.command(name="ask", description="Ask Claude a question with optional image/file")
+        @app_commands.describe(
+            question="Your question for Claude",
+            file="Optional file or pasted image to analyze"
+        )
+        async def ask(interaction: discord.Interaction, question: str, file: discord.Attachment = None):
+            await self.message_handler.handle_ask_command(interaction, question, file)
 
         @self.tree.command(name="ask_drive", description="Ask Claude about a Google Drive document")
         async def ask_drive(interaction: discord.Interaction, doc_id: str, question: str):
